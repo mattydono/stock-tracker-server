@@ -1,4 +1,4 @@
-import { company, quote, news, peers } from 'iexcloud_api_wrapper';
+import { company, quote, news, peers, history } from 'iexcloud_api_wrapper';
 
 export const companyRequest = async (req, res) => {
     try {
@@ -34,6 +34,16 @@ export const newsRequest = async (req, res) => {
     try {
         const { ticker } = req.params;
         const result = await news(ticker);
+        res.status(200).send(result);
+    } catch (e) {
+        res.status(500).send(e);
+    }
+}
+
+export const chartsRequest = async (req, res) => {
+    try {
+        const { ticker, range } = req.params;
+        const result = await history(ticker, { period: range });
         res.status(200).send(result);
     } catch (e) {
         res.status(500).send(e);
