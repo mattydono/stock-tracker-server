@@ -33,7 +33,7 @@ export const peersRequest = async (req, res) => {
 export const newsRequest = async (req, res) => {
     try {
         const { ticker } = req.params;
-        const result = await news(ticker);
+        const result = await news(ticker, 5);
         res.status(200).send(result);
     } catch (e) {
         res.status(500).send(e);
