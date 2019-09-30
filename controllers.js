@@ -4,7 +4,9 @@ const symbolsData = require('./symbols.json');
 export const searchRequest = async (req, res) => {
     try {
         const { query } = req.params;
-        let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().includes(query))
+        let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().includes(query));
+        result = result.length > 10 ? result.slice(0, 10) : result;
+
         let resp = symbolsData.filter(({ name }) => name.toLowerCase().includes(query)).slice(0, Math.max(0, (10 - result.length)));
 
         const response = [...result].concat(resp)
