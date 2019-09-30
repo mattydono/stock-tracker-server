@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
 
+
 dotenv.config();
 
 const app = express();
@@ -14,7 +15,7 @@ const ENV = process.env.ENV || 'dev';
 app
     .use(cors())
     .use(express.json())
-    .use(routes);
+    .use('/stock', routes);
 
 http.listen(PORT, error => {
     if (error) console.log('Unable to connect to the server', error);
