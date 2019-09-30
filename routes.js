@@ -1,13 +1,16 @@
 import express from 'express';
-import { companyRequest, quoteRequest, newsRequest, peersRequest, chartsRequest } from './controllers';
+import { companyRequest, quoteRequest, newsRequest, peersRequest, chartsRequest, searchRequest } from './controllers';
 
 const router = express.Router();
 
 router
-    .get('/stock/:ticker/company', companyRequest)
-    .get('/stock/:ticker/quote', quoteRequest)
-    .get('/stock/:ticker/news', newsRequest)
-    .get('/stock/:ticker/peers', peersRequest)
-    .get('/stock/:ticker/chart/:range', chartsRequest);
+    .get('/:ticker/company', companyRequest)
+    .get('/:ticker/quote', quoteRequest)
+    .get('/:ticker/news', newsRequest)
+    .get('/:ticker/peers', peersRequest)
+    .get('/:ticker/chart/:range', chartsRequest)
+    .get('/search/:query', searchRequest);
+
+
 
 export default router;

@@ -1,4 +1,19 @@
-import { company, quote, news, peers, history } from 'iexcloud_api_wrapper';
+import { company, quote, news, peers, history, marketSymbols } from 'iexcloud_api_wrapper';
+const symbolsData = require('./symbols.json');
+
+export const searchRequest = async (req, res) => {
+    try {
+        const { query } = req.params;
+        let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().includes(query))
+        let resp = symbolsData.filter(({ name }) => name.toLowerCase().includes(query)).slice(0, Math.max(0, (10 - result.length)));
+
+        const response = [...result].concat(resp)
+
+        res.status(200).send(response);
+    } catch (e) {
+        res.status(400).send(e);
+    }
+}
 
 export const companyRequest = async (req, res) => {
     try {
@@ -16,7 +31,8 @@ export const quoteRequest = async (req, res) => {
         const result = await quote(ticker);
         res.status(200).send(result);
     } catch (e) {
-        res.status(500).send(e);
+        const { message } = e;
+        res.status(500).send(message);
     }
 }
 
@@ -43,7 +59,7 @@ export const newsRequest = async (req, res) => {
 export const chartsRequest = async (req, res) => {
     try {
         const { ticker, range } = req.params;
-        const result = await history(ticker, { period: range });
+        const result = await history(ticker, { period: range, interval: range[1] === 'y' ? 10 : 1 });
         res.status(200).send(result);
     } catch (e) {
         res.status(500).send(e);
