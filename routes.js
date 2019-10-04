@@ -1,5 +1,5 @@
 import express from 'express';
-import { companyRequest, quoteRequest, newsRequest, peersRequest, chartsRequest, searchRequest, errorRequest, topsRequest } from './controllers';
+import { companyRequest, quoteRequest, newsRequest, peersRequest, chartsRequest, searchRequest, errorRequest, topsRequest, priceRequest } from './controllers';
 
 const router = express.Router();
 
@@ -11,6 +11,7 @@ router
     .get('/:ticker/chart/:range', chartsRequest)
     .get('/search/:query', searchRequest)
     .get('/:ticker/tops', topsRequest)
+    .get('/:ticker/favorites', priceRequest)
     .get('/error/:ticker', errorRequest);
 
 
