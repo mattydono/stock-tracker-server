@@ -11,7 +11,7 @@ router
     .get('/:ticker/chart/:range', chartsRequest)
     .get('/search/:query', searchRequest)
     .get('/:ticker/tops', topsRequest)
-    .get('/:ticker/favorites', priceRequest)
+    .get('/:ticker/prices', priceRequest)
     .get('/error/:ticker', errorRequest);
 
 

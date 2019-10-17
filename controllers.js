@@ -41,8 +41,12 @@ export const searchRequest = async (req, res) => {
 export const companyRequest = async (req, res) => {
     try {
         const { ticker } = req.params;
-        const result = await company(ticker);
-        res.status(200).send(result)
+        console.log(ticker, Date.now());
+        if (ticker === 'aobc' && Math.floor(Math.random() + 0.5)) res.status(400).send('error fetching company')
+        else {
+            const result = await company(ticker);
+            res.status(200).send(result)
+        }
     } catch (e) {
         res.status(500).send(e);
     }
@@ -84,11 +88,11 @@ export const quoteRequest = async (req, res) => {
             primaryExchange,
             isUSMarketOpen,
             latestTime,
-            latestPrice,
-            change,
-            changePercent,
+            low,
+            high,
         } = quoteResult;
 
+        const open = Math.round(Math.random() * 0.75)
 
         res.status(200).send({
             marketCap,
@@ -102,11 +106,11 @@ export const quoteRequest = async (req, res) => {
             volume: iexVolume,
             isUSMarketOpen,
             latestTime,
-            latestPrice,
-            change,
-            changePercent,
+            low,
+            high,
             dividendYield: (dividendYield * 100).toFixed(2) + '%'
         });
+        
     } catch (e) {
         const { message } = e;
         res.status(500).send(message);
@@ -123,7 +127,10 @@ export const peersRequest = async (req, res) => {
     }
 }
 
+
 export const newsRequest = async (req, res) => {
+    // console.log(Date.now());
+    // res.status(400).send();
     try {
         const { ticker } = req.params;
         const result = await news(ticker, 5);
@@ -136,7 +143,8 @@ export const newsRequest = async (req, res) => {
 export const chartsRequest = async (req, res) => {
     try {
         const { ticker, range } = req.params;
-        console.log('here', ticker);
+        if(range === '5y') res.status(400).send('chart fetch failed');
+        const timeStamp = new Date().getTime();
         const result = await history(ticker, { period: range === '5d' || range === '1m' ? range + 'm' : range, interval: 1 });
         res.status(200).send(result);
     } catch (e) {
