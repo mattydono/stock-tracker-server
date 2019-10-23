@@ -143,7 +143,6 @@ export const newsRequest = async (req, res) => {
 export const chartsRequest = async (req, res) => {
     try {
         const { ticker, range } = req.params;
-        if(range === '5y') res.status(400).send('chart fetch failed');
         const timeStamp = new Date().getTime();
         const result = await history(ticker, { period: range === '5d' || range === '1m' ? range + 'm' : range, interval: 1 });
         res.status(200).send(result);
