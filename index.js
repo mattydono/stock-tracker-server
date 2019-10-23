@@ -1,25 +1,51 @@
 import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import routes from './routes';
+import io from 'socket.io';
 
+import { 
+    searchRequest, 
+    companyRequest,
+    priceRequest,
+    quoteRequest, 
+    peersRequest, 
+    newsRequest, 
+    chartsRequest,
+    isValidTicker,
+    } from './controllers';
 
-dotenv.config();
 
 const app = express();
-const http = require('http').Server(app)
+const server = require('http').Server(app)
+const ios = io(server);
+
 
 const PORT = process.env.SERVER_PORT || 3000;
 const ENV = process.env.ENV || 'dev';
 
-app
-    .use(cors())
-    .use(express.json())
-    .use('/stock', routes);
-
-http.listen(PORT, error => {
+server.listen(PORT, error => {
     if (error) console.log('Unable to connect to the server', error);
     else console.log(`Server listening on ${PORT} - ${ENV} environment`);
 })
+
+
+ios.on('connection', function(socket) {
+    const polling = { }
+    socket.on('company', ticker => companyRequest(ticker, socket));
+    socket.on('news', ticker => newsRequest(ticker, socket));
+    socket.on('peers', ticker => peersRequest(ticker));
+    socket.on('keystats', ticker => quoteRequest(ticker, socket));
+    socket.on('prices', tickers => {
+        const prices = () => priceRequest(tickers, socket)
+        prices();
+        polling.prices = setInterval(prices, 3000);
+    });
+    socket.on('unsubscribePrices', () => clearInterval(polling.prices));
+    socket.on('chart', args => {
+        const [ticker, range] = args;
+        chartsRequest(ticker, range, socket);
+    });
+    socket.on('search', query => searchRequest(query, socket));
+    socket.on('isValid', ticker => isValidTicker(ticker, socket))
+})
+
 
 export default app;

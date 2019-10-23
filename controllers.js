@@ -1,69 +1,127 @@
-import { company, quote, news, peers, history, marketSymbols } from 'iexcloud_api_wrapper';
+import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
 const symbolsData = require('./symbols.json');
 
-export const searchRequest = async (req, res) => {
+export const isValidTicker = (ticker, socket) => {
     try {
-        const { query } = req.params;
-        let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().includes(query));
+        const isValid = symbolsData.filter(({ symbol }) => symbol === ticker.toUpperCase()).length > 0;
+        socket.emit('isValid', isValid);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+export const searchRequest = async (query, socket) => {
+    try {
+        let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().startsWith(query));
         result = result.length > 10 ? result.slice(0, 10) : result;
 
         let resp = symbolsData.filter(({ name }) => name.toLowerCase().includes(query)).slice(0, Math.max(0, (10 - result.length)));
 
         const response = [...result].concat(resp)
 
-        res.status(200).send(response);
+        socket.emit('search', response);
     } catch (e) {
-        res.status(400).send(e);
+        socket.emit('error', 'search request failed');
     }
 }
 
-export const companyRequest = async (req, res) => {
+export const companyRequest = async (ticker, socket) => {
     try {
-        const { ticker } = req.params;
         const result = await company(ticker);
-        res.status(200).send(result)
+        socket.emit('company', result)
     } catch (e) {
-        res.status(500).send(e);
+        socket.emit('error', 'company');
     }
 }
 
-export const quoteRequest = async (req, res) => {
+export const priceRequest = async (ticker, socket) => {
     try {
-        const { ticker } = req.params;
-        const result = await quote(ticker);
-        res.status(200).send(result);
+        const tickerArray = ticker.split(',');
+        const priceResultArray = await Promise.all(tickerArray.map(async ticker => {
+            const { latestPrice, change, changePercent } = await quote(ticker);
+            return ({
+                ticker,
+                latestPrice,
+                change,
+                changePercent,
+            })
+        }));
+        socket.emit('prices', priceResultArray)
     } catch (e) {
-        const { message } = e;
-        res.status(500).send(message);
+        socket.emit('error', 'prices');
     }
 }
 
-export const peersRequest = async (req, res) => {
+export const quoteRequest = async (ticker, socket) => {
     try {
-        const { ticker } = req.params;
+        const quoteResult = await quote(ticker);
+        const keyStatsResult = await keyStats(ticker);
+        const { ttmEPS, dividendYield } = keyStatsResult;
+        const {
+            marketCap,
+            peRatio,
+            week52High,
+            week52Low,
+            avgTotalVolume,
+            previousClose,
+            iexVolume,
+            primaryExchange,
+            isUSMarketOpen,
+            latestTime,
+            low,
+            high,
+        } = quoteResult;
+
+        const result = {
+            marketCap,
+            peRatio,
+            week52High,
+            week52Low,
+            avgTotalVolume,
+            previousClose,
+            primaryExchange,
+            actualEPS: ttmEPS,
+            volume: iexVolume,
+            isUSMarketOpen,
+            latestTime,
+            low,
+            high,
+            dividendYield: (dividendYield * 100).toFixed(2) + '%'
+        };
+
+        socket.emit('keystats', result);
+        
+    } catch (e) {
+        socket.emit('error', 'quote');
+    }
+}
+
+export const peersRequest = async (ticker, socket) => {
+    try {
         const result = await peers(ticker);
-        res.status(200).send(result);
+        socket.emit('peers', result);
     } catch (e) {
-        res.status(500).send(e);
+        socket.emit('error', 'peers');
     }
 }
 
-export const newsRequest = async (req, res) => {
+export const newsRequest = async (ticker, socket) => {
     try {
-        const { ticker } = req.params;
         const result = await news(ticker, 5);
-        res.status(200).send(result);
+        socket.emit('news', result);
     } catch (e) {
-        res.status(500).send(e);
+        socket.emit('error', 'news');
     }
 }
 
-export const chartsRequest = async (req, res) => {
+export const chartsRequest = async (ticker, range, socket) => {
     try {
-        const { ticker, range } = req.params;
-        const result = await history(ticker, { period: range, interval: range[1] === 'y' ? 10 : 1 });
-        res.status(200).send(result);
+        console.log(ticker, range);
+        const result = await history(ticker, { period: range === '5d' || range === '1m' ? range + 'm' : range, interval: 1 });
+        console.log(range, result.length);
+        socket.emit('chart', result);
     } catch (e) {
-        res.status(500).send(e);
+        socket.emit('error', 'chart fetch error');
     }
 }
+
