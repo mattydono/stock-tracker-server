@@ -1,11 +1,13 @@
 import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
 const symbolsData = require('./symbols.json');
 
+export const isValidTicker = async (ticker, socket) => {
+    const isValid = symbolsData.includes(({ symbol }) => symbol === ticker);
+    socket.emit('isValid', isValid);
+}
 
-export const searchRequest = async (req, res) => {
+export const searchRequest = async (query, socket) => {
     try {
-        const { query } = req.params;
-        if (query === 'test') throw Error('testing errors');
         let result = symbolsData.filter(({ symbol }) => symbol.toLowerCase().startsWith(query));
         result = result.length > 10 ? result.slice(0, 10) : result;
 
@@ -13,10 +15,9 @@ export const searchRequest = async (req, res) => {
 
         const response = [...result].concat(resp)
 
-        res.status(200).send(response);
+        socket.emit('search', response);
     } catch (e) {
-        console.log(e.message);
-        res.status(400);
+        socket.emit('error', 'search request failed');
     }
 }
 
@@ -102,7 +103,6 @@ export const peersRequest = async (ticker, socket) => {
 
 export const newsRequest = async (ticker, socket) => {
     try {
-        console.log(ticker);
         const result = await news(ticker, 5);
         socket.emit('news', result);
     } catch (e) {
@@ -110,13 +110,14 @@ export const newsRequest = async (ticker, socket) => {
     }
 }
 
-export const chartsRequest = async (req, res) => {
+export const chartsRequest = async (ticker, range, socket) => {
     try {
-        const { ticker, range } = req.params;
+        console.log(ticker, range);
         const result = await history(ticker, { period: range === '5d' || range === '1m' ? range + 'm' : range, interval: 1 });
-        res.status(200).send(result);
+        console.log(range, result.length);
+        socket.emit('chart', result);
     } catch (e) {
-        res.status(500).send(e);
+        socket.emit('error', 'chart fetch error');
     }
 }
 

@@ -8,7 +8,8 @@ import {
     quoteRequest, 
     peersRequest, 
     newsRequest, 
-    chartsRequest
+    chartsRequest,
+    isValidTicker,
     } from './controllers';
 
 
@@ -38,6 +39,11 @@ ios.on('connection', function(socket) {
         polling.prices = setInterval(prices, 3000);
     });
     socket.on('unsubscribePrices', () => clearInterval(polling.prices));
+    socket.on('chart', args => {
+        const [ticker, range] = args;
+        chartsRequest(ticker, range, socket);
+    });
+    socket.on('search', query => searchRequest(query, socket));
 })
 
 
