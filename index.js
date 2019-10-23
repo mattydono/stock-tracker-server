@@ -44,6 +44,7 @@ ios.on('connection', function(socket) {
         chartsRequest(ticker, range, socket);
     });
     socket.on('search', query => searchRequest(query, socket));
+    socket.on('isValid', ticker => isValidTicker(ticker, socket))
 })
 
 

@@ -1,9 +1,13 @@
 import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
 const symbolsData = require('./symbols.json');
 
-export const isValidTicker = async (ticker, socket) => {
-    const isValid = symbolsData.includes(({ symbol }) => symbol === ticker);
-    socket.emit('isValid', isValid);
+export const isValidTicker = (ticker, socket) => {
+    try {
+        const isValid = symbolsData.filter(({ symbol }) => symbol === ticker.toUpperCase()).length > 0;
+        socket.emit('isValid', isValid);
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 export const searchRequest = async (query, socket) => {
