@@ -34,10 +34,10 @@ export const companyRequest = async (ticker, socket) => {
     }
 }
 
-export const priceRequest = async (ticker, socket) => {
+export const priceRequest = async (tickers, tickersMap) => {
+    console.log(tickers, tickersMap);
     try {
-        const tickerArray = ticker.split(',');
-        const priceResultArray = await Promise.all(tickerArray.map(async ticker => {
+        const priceResultArray = await Promise.all(tickers.map(async ticker => {
             const { latestPrice, change, changePercent } = await quote(ticker);
             return ({
                 ticker,
@@ -46,11 +46,33 @@ export const priceRequest = async (ticker, socket) => {
                 changePercent,
             })
         }));
-        socket.emit('prices', priceResultArray)
+        priceResultArray.forEach((item) => {
+            const { ticker } = item;
+            tickersMap.get(ticker).forEach(socket => socket.emit('prices', [item]))
+        })
     } catch (e) {
-        socket.emit('error', 'prices');
+        console.error(e);
+        // socket.emit('error', 'prices');
     }
 }
+
+// export const priceRequest = async (ticker, socket) => {
+//     try {
+//         const tickerArray = ticker.split(',');
+//         const priceResultArray = await Promise.all(tickerArray.map(async ticker => {
+//             const { latestPrice, change, changePercent } = await quote(ticker);
+//             return ({
+//                 ticker,
+//                 latestPrice,
+//                 change,
+//                 changePercent,
+//             })
+//         }));
+//         socket.emit('prices', priceResultArray)
+//     } catch (e) {
+//         socket.emit('error', 'prices');
+//     }
+// }
 
 export const quoteRequest = async (ticker, socket) => {
     try {
@@ -116,9 +138,7 @@ export const newsRequest = async (ticker, socket) => {
 
 export const chartsRequest = async (ticker, range, socket) => {
     try {
-        console.log(ticker, range);
         const result = await history(ticker, { period: range === '5d' || range === '1m' ? range + 'm' : range, interval: 1 });
-        console.log(range, result.length);
         socket.emit('chart', result);
     } catch (e) {
         socket.emit('error', 'chart fetch error');
