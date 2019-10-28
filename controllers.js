@@ -1,4 +1,4 @@
-import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
+import { company, quote, news, peers, history, keyStats, price } from 'iexcloud_api_wrapper';
 const symbolsData = require('./symbols.json');
 
 export const isValidTicker = (ticker, socket) => {
@@ -34,45 +34,33 @@ export const companyRequest = async (ticker, socket) => {
     }
 }
 
-export const priceRequest = async (tickers, tickersMap) => {
-    console.log(tickers, tickersMap);
+export const getPrice = async (ticker, pricesMap) => {
     try {
-        const priceResultArray = await Promise.all(tickers.map(async ticker => {
-            const { latestPrice, change, changePercent } = await quote(ticker);
-            return ({
-                ticker,
-                latestPrice,
-                change,
-                changePercent,
-            })
-        }));
-        priceResultArray.forEach((item) => {
-            const { ticker } = item;
-            tickersMap.get(ticker).forEach(socket => socket.emit('prices', [item]))
-        })
+        const { latestPrice, change, changePercent } = await quote(ticker);
+        pricesMap.set(ticker, ({ latestPrice, change, changePercent }));
+        console.log(pricesMap);
+        return ({ ticker, latestPrice, change, changePercent });
     } catch (e) {
         console.error(e);
-        // socket.emit('error', 'prices');
     }
 }
 
-// export const priceRequest = async (ticker, socket) => {
-//     try {
-//         const tickerArray = ticker.split(',');
-//         const priceResultArray = await Promise.all(tickerArray.map(async ticker => {
-//             const { latestPrice, change, changePercent } = await quote(ticker);
-//             return ({
-//                 ticker,
-//                 latestPrice,
-//                 change,
-//                 changePercent,
-//             })
-//         }));
-//         socket.emit('prices', priceResultArray)
-//     } catch (e) {
-//         socket.emit('error', 'prices');
-//     }
-// }
+export const priceRequest = async (tickersMap, socketMap, pricesMap) => {
+    const tickers = Array.from(tickersMap.keys());
+    try {
+        const priceResultArray = await Promise.all(tickers.map(async ticker => await getPrice(ticker, pricesMap)));
+        priceResultArray.forEach((item) => {
+            const { ticker } = item;
+            tickersMap.get(ticker).forEach(socketid => (
+                socketMap.has(socketid) && socketMap.get(socketid).emit('prices', [item]) || 
+                tickersMap.get(ticker).delete(socketid) && (tickersMap.get(ticker).size || tickersMap.delete(ticker))
+                ));
+        })
+    } catch (e) {
+        console.error(e);
+        //socket.emit('error', 'prices');
+    }
+}
 
 export const quoteRequest = async (ticker, socket) => {
     try {
