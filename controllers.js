@@ -3,6 +3,7 @@ const symbolsData = require('./symbols.json');
 
 export const isValidTicker = (ticker, socket) => {
     try {
+        console.log(ticker);
         const isValid = symbolsData.filter(({ symbol }) => symbol === ticker.toUpperCase()).length > 0;
         socket.emit('isValid', isValid);
     } catch (e) {
@@ -37,25 +38,24 @@ export const companyRequest = async (ticker, socket) => {
 export const getPrice = async (ticker, pricesMap) => {
     try {
         const { latestPrice, change, changePercent } = await quote(ticker);
-        pricesMap.set(ticker, ({ latestPrice, change, changePercent }));
-        console.log(pricesMap);
+        pricesMap.set(ticker, ({ ticker, latestPrice, change, changePercent }));
         return ({ ticker, latestPrice, change, changePercent });
     } catch (e) {
         console.error(e);
     }
 }
 
-export const priceRequest = async (tickersMap, socketMap, pricesMap) => {
-    const tickers = Array.from(tickersMap.keys());
+export const priceRequest = async (tickers, socketMap, pricesMap, socketTickerMap) => {
     try {
         const priceResultArray = await Promise.all(tickers.map(async ticker => await getPrice(ticker, pricesMap)));
-        priceResultArray.forEach((item) => {
-            const { ticker } = item;
-            tickersMap.get(ticker).forEach(socketid => (
-                socketMap.has(socketid) && socketMap.get(socketid).emit('prices', [item]) || 
-                tickersMap.get(ticker).delete(socketid) && (tickersMap.get(ticker).size || tickersMap.delete(ticker))
-                ));
+
+        socketTickerMap.forEach((tickers, socketId) => {
+            const socket = socketMap.get(socketId);
+            const tickersArray = Array.from(tickers);
+            const prices = tickersArray.map(ticker => pricesMap.get(ticker));
+            socket.emit('prices', prices);
         })
+
     } catch (e) {
         console.error(e);
         //socket.emit('error', 'prices');
