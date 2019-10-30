@@ -28,12 +28,11 @@ server.listen(PORT, error => {
     else console.log(`Server listening on ${PORT} - ${ENV} environment`);
 })
 
-
 const socketMap = new Map(); // key: socketObject value: [tickers]
 
 const pricesMap = new Map(); // ticker: price;
 
-const socketTickerMap = new Map();
+const socketTickerMap = new Map(); // key: socketId value: [tickers];
 
 // normalized data: sockets have tickers and tickers have sockets and prices, prices have tickers.
 

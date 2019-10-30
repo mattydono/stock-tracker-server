@@ -22,7 +22,7 @@ export const searchRequest = async (query, socket) => {
 
         socket.emit('search', response);
     } catch (e) {
-        socket.emit('error', 'search request failed');
+        socket.emit('error', 'search');
     }
 }
 
@@ -37,16 +37,18 @@ export const companyRequest = async (ticker, socket) => {
 
 export const getPrice = async (ticker, pricesMap) => {
     try {
+        if(ticker === 'snap' || ticker === 'SNAP') throw Error('error test');
         const { latestPrice, change, changePercent } = await quote(ticker);
-        pricesMap.set(ticker, ({ ticker, latestPrice, change, changePercent }));
+        pricesMap.set(ticker, ({ ticker, latestPrice, change, changePercent, error: false }));
         return ({ ticker, latestPrice, change, changePercent });
-    } catch (e) {
-        console.error(e);
+    } catch {
+        pricesMap.set(ticker, ({ ticker, latestPrice: 0, change: 0, changePercent: 0, error: true }))
     }
 }
 
 export const priceRequest = async (tickers, socketMap, pricesMap, socketTickerMap) => {
     try {
+
         const priceResultArray = await Promise.all(tickers.map(async ticker => await getPrice(ticker, pricesMap)));
 
         socketTickerMap.forEach((tickers, socketId) => {
@@ -58,7 +60,6 @@ export const priceRequest = async (tickers, socketMap, pricesMap, socketTickerMa
 
     } catch (e) {
         console.error(e);
-        //socket.emit('error', 'prices');
     }
 }
 
