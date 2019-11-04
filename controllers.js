@@ -1,4 +1,5 @@
-import { company, quote, news, peers, history, keyStats, price } from 'iexcloud_api_wrapper';
+// import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
+import { price, company, news, quote, keyStats } from './testcontrollers';
 const symbolsData = require('./symbols.json');
 
 export const isValidTicker = (ticker, socket) => {
@@ -26,37 +27,56 @@ export const searchRequest = async (query, socket) => {
     }
 }
 
-export const companyRequest = async (ticker, socket) => {
+export const hasNotExpired = (map, ticker, minutes) => {
+    const ms = minutes * 60 * 1000;
+    return (Date.now() - map.get(ticker).timestamp) < ms
+}
+
+export const companyRequest = socketMap => companyMap => async (ticker, socketId) => {
     try {
-        const result = await company(ticker);
-        socket.emit('company', result)
+        const socket = socketMap.get(socketId);
+        const isCached = (companyMap.has(ticker) || (companyMap.set(ticker, { timestamp: null, data: null }) && false)) && hasNotExpired(companyMap, ticker, (24 * 60));
+        const companyData = isCached ? companyMap.get(ticker).data : await company(ticker);
+        const timestamp = companyMap.get(ticker).timestamp || Date.now();
+        companyMap.set(ticker, { timestamp, data: companyData})
+        socket.emit('company', companyData)
     } catch (e) {
-        socket.emit('error', 'company');
+        // socket.emit('error', 'company');
     }
 }
 
 export const getPrice = async (ticker, pricesMap) => {
     try {
-        if(ticker === 'snap' || ticker === 'SNAP') throw Error('error test');
-        const { latestPrice, change, changePercent } = await quote(ticker);
+        const { latestPrice, change, changePercent } = await price(ticker);
         pricesMap.set(ticker, ({ ticker, latestPrice, change, changePercent, error: false }));
-        return ({ ticker, latestPrice, change, changePercent });
     } catch {
         pricesMap.set(ticker, ({ ticker, latestPrice: 0, change: 0, changePercent: 0, error: true }))
+    }
+}
+
+export const emitPrices = socketMap => pricesMap => async (tickers, socketId) => {
+    try {
+        for (const ticker of tickers) {
+            if (!pricesMap.has(ticker)) {
+                await getPrice(ticker, pricesMap)
+            }
+        }
+        const prices = Array.from(tickers).map(ticker => pricesMap.get(ticker));
+        socketMap.get(socketId).emit('prices', prices);
+    } catch {
+        const socket = socketMap.get(socketId);
+        socket.emit('error', 'error emitting prices');
     }
 }
 
 export const priceRequest = async (tickers, socketMap, pricesMap, socketTickerMap) => {
     try {
 
-        const priceResultArray = await Promise.all(tickers.map(async ticker => await getPrice(ticker, pricesMap)));
+        for (const ticker of tickers) await getPrice(ticker, pricesMap)
 
-        socketTickerMap.forEach((tickers, socketId) => {
-            const socket = socketMap.get(socketId);
-            const tickersArray = Array.from(tickers);
-            const prices = tickersArray.map(ticker => pricesMap.get(ticker));
-            socket.emit('prices', prices);
-        })
+        const emit = emitPrices(socketMap)(pricesMap);
+
+        for (const [socketId, tickers] of socketTickerMap) await emit(tickers, socketId)
 
     } catch (e) {
         console.error(e);

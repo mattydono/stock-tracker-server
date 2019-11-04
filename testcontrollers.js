@@ -1,32 +1,33 @@
-import symbols from './symbols.json';
-import { randomTags } from './helpers';
+const symbols = require('./symbols.json');
+
+const randomTags = n => {
+    const startIndex = Math.floor(Math.random() * 1000);
+    return symbols.slice(startIndex, (startIndex + n)).map(({ symbol }) => symbol);
+}
 
 export const price = async () => {
     const price = Math.random() * 10;
-    return ({
+    return {
         latestPrice: price * 10,
         change: price,
         changePercent: Math.sqrt(price),
-    })
+    };
 }
 
 export const company = async ticker => {
-    const tags = randomTags(4);
-    const { symbol, name: companyName } = symbols.find(({ symbol }) => symbol === ticker)
-    return ({
-        symbol,
-        companyName,
-        website: `${companyName.split(' ')[0].toLowerCase()}.com`,
-        description: `${symbol * 15}`,
-        tags,
-    })
-    // return ({
-    //     symbol: 'aapl',
-    //     companyName: 'Apple Inc.',
-    //     website: 'www.apple.com',
-    //     description: 'Very cool company from California',
-    //     tags: ['NASDAQ', 'TECHNOLOGY', 'USD']
-    // })
+    try {
+        const tags = await randomTags(4);
+        const { symbol, name: companyName } = symbols.find(({ symbol }) => symbol === ticker.toUpperCase());
+        return {
+            symbol,
+            companyName,
+            website: `${companyName.split(' ')[0].toLowerCase()}.com`,
+            description: `Very nice company ${companyName}`,
+            tags,
+        };
+    } catch {
+        throw Error('could not fetch company')
+    }
 }
 
 export const news = async ticker => {
@@ -34,7 +35,7 @@ export const news = async ticker => {
     const newsArr = arr.map(item => {
         const datetime = Date.now() - Math.floor(Math.random() * Math.pow(10, 4));
         return ({
-            url: `www.${tikcer}${item}.com`,
+            url: `www.${ticker}${item}.com`,
             headline: `Headline number ${item} for ${ticker}`,
             datetime,
             source: `Mock Data`
@@ -45,7 +46,7 @@ export const news = async ticker => {
 
 
 export const quote = async ticker => {
-    const { exchange: primaryExchange} = symbols.find(({ symbol }) => symbol === ticker);
+    const { exchange: primaryExchange} = symbols.find(({ symbol }) => symbol === ticker.toUpperCase());
     return ({
         marketCap: Math.floor(Math.random() * Math.pow(10, 5)),
         peRatio: 22,
@@ -69,16 +70,6 @@ export const keyStats = async () => {
         dividendYield: Math.random()
     })
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
