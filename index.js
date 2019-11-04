@@ -52,13 +52,12 @@ ios.on('connection', socket => {
     const emit = () => emitPrices(socketMap)(pricesMap)(socketTickerMap.get(id), id)
     socketMap.set(id, socket);
     socket.on('ticker', ticker => {
-        socketTickerMap.set(id, new Set([...favorites, ticker])) && emit()
         companyRequest(socketMap)(companyMap)(ticker, id);
         newsRequest(ticker, socket);
         quoteRequest(ticker, socket);
     })
     socket.on('prices', tickers => {
-        socketTickerMap.set(id, new Set([...tickers, ...currentTicker])) && emit()
+        socketTickerMap.set(id, new Set(tickers)) && emit()
     });
     socket.on('search', query => searchRequest(query, socket));
     socket.on('isValid', ticker => isValidTicker(ticker, socket));
