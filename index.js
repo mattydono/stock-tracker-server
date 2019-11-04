@@ -45,7 +45,7 @@ const updatePrices = tickers => () => {
 
 const update = updatePrices(new Set())
 
-poll = setInterval(update, 3000);
+poll = setInterval(update, 5000);
 
 ios.on('connection', socket => {
     const { id } = socket;
@@ -64,13 +64,8 @@ ios.on('connection', socket => {
     socket.on('isValid', ticker => isValidTicker(ticker, socket));
     socket.on('chart', args => {
         const [ticker, range] = args;
-        const chart = () => chartsRequest(ticker, range, socket);
-        chart();
-        if(range === '1d') {
-            polling.chart = setInterval(chart, 60000);
-        }
+        chartsRequest(ticker, range, socket);
     });
-    socket.on('unsubscribeChart', () => { });
     socket.on('disconnect', () => {
         socketMap.has(id) && socketMap.delete(id);
         socketTickerMap.has(id) && socketTickerMap.delete(id);
