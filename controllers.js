@@ -1,5 +1,5 @@
-// import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
-import { price, company, news, quote, keyStats } from './testcontrollers';
+import { company, quote, news, peers, history, keyStats } from 'iexcloud_api_wrapper';
+// import { price, company, news, quote, keyStats } from './testcontrollers';
 const symbolsData = require('./symbols.json');
 
 export const isValidTicker = (ticker, socket) => {
@@ -33,21 +33,21 @@ export const hasNotExpired = (map, ticker, minutes) => {
 }
 
 export const companyRequest = socketMap => companyMap => async (ticker, socketId) => {
+    const socket = socketMap.get(socketId);
     try {
-        const socket = socketMap.get(socketId);
         const isCached = (companyMap.has(ticker) || (companyMap.set(ticker, { timestamp: null, data: null }) && false)) && hasNotExpired(companyMap, ticker, (24 * 60));
         const companyData = isCached ? companyMap.get(ticker).data : await company(ticker);
         const timestamp = companyMap.get(ticker).timestamp || Date.now();
         companyMap.set(ticker, { timestamp, data: companyData})
         socket.emit('company', companyData)
     } catch (e) {
-        // socket.emit('error', 'company');
+        socket.emit('error', 'company');
     }
 }
 
 export const getPrice = async (ticker, pricesMap) => {
     try {
-        const { latestPrice, change, changePercent } = await price(ticker);
+        const { latestPrice, change, changePercent } = await quote(ticker);
         pricesMap.set(ticker, ({ ticker, latestPrice, change, changePercent, error: false }));
     } catch {
         pricesMap.set(ticker, ({ ticker, latestPrice: 0, change: 0, changePercent: 0, error: true }))
